@@ -1,0 +1,753 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"><title>Compilers@NJUSE-Chapter03 Lexical Analysis | Rashawn's Blog</title><meta name="author" content="RashawnXue"><meta name="copyright" content="RashawnXue"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="ffffff"><meta name="description" content="词法分析的作用词法分析器的作用 词法分析是读入源程序的输入字符、将它们组成词素，生成并输出一个词法单元序列，每个词法单元对应于一个词素 常见的做法 由语法分析器(Parser)调用，需要的时候不断读取、生成词法单元 可以避免额外的输入输出   在识别出词法单元之外，还会完成一些不需要生成词法单元的简单处理 比如删除注释、将多个连续的空白字符压缩成一个字符等 另一种任务是将编译器生成的错误信息与源程">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Compilers@NJUSE-Chapter03 Lexical Analysis">
+<meta property="og:url" content="http://rashawnxue.github.io/2023/03/08/courses/NJUSE/Compilers@NJUSE/Compilers-NJUSE-Chapter03/index.html">
+<meta property="og:site_name" content="Rashawn&#39;s Blog">
+<meta property="og:description" content="词法分析的作用词法分析器的作用 词法分析是读入源程序的输入字符、将它们组成词素，生成并输出一个词法单元序列，每个词法单元对应于一个词素 常见的做法 由语法分析器(Parser)调用，需要的时候不断读取、生成词法单元 可以避免额外的输入输出   在识别出词法单元之外，还会完成一些不需要生成词法单元的简单处理 比如删除注释、将多个连续的空白字符压缩成一个字符等 另一种任务是将编译器生成的错误信息与源程">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/icon/avatar-icon-square.png">
+<meta property="article:published_time" content="2023-03-08T09:36:06.000Z">
+<meta property="article:modified_time" content="2023-08-20T08:34:27.938Z">
+<meta property="article:author" content="RashawnXue">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/icon/avatar-icon-square.png"><link rel="shortcut icon" href="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/icon/avatar-icon-square.png"><link rel="canonical" href="http://rashawnxue.github.io/2023/03/08/courses/NJUSE/Compilers@NJUSE/Compilers-NJUSE-Chapter03/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '天',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: true,
+  }
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Compilers@NJUSE-Chapter03 Lexical Analysis',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2023-08-20 16:34:27'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+    win.getCSS = (url,id = false) => new Promise((resolve, reject) => {
+      const link = document.createElement('link')
+      link.rel = 'stylesheet'
+      link.href = url
+      if (id) link.id = id
+      link.onerror = reject
+      link.onload = link.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        link.onload = link.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(link)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', 'ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><meta name="generator" content="Hexo 6.3.0"></head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">加载中...</div></div></div><script>const preloader = {
+  endLoading: () => {
+    document.body.style.overflow = 'auto';
+    document.getElementById('loading-box').classList.add("loaded")
+  },
+  initLoading: () => {
+    document.body.style.overflow = '';
+    document.getElementById('loading-box').classList.remove("loaded")
+
+  }
+}
+window.addEventListener('load',()=> { preloader.endLoading() })
+
+if (false) {
+  document.addEventListener('pjax:send', () => { preloader.initLoading() })
+  document.addEventListener('pjax:complete', () => { preloader.endLoading() })
+}</script><div id="web_bg"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/icon/avatar-icon-square.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">33</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">5</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">10</div></a></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background: url"><nav id="nav"><span id="blog-info"><a href="/" title="Rashawn's Blog"><img class="site-icon" src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/icon/avatar-icon-square.png"/><span class="site-name">Rashawn's Blog</span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">Compilers@NJUSE-Chapter03 Lexical Analysis</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2023-03-08T09:36:06.000Z" title="发表于 2023-03-08 17:36:06">2023-03-08</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2023-08-20T08:34:27.938Z" title="更新于 2023-08-20 16:34:27">2023-08-20</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/COURSES/">COURSES</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/COURSES/%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86-NJUSE/">编译原理@NJUSE</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">字数总计:</span><span class="word-count">5.6k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>17分钟</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="Compilers@NJUSE-Chapter03 Lexical Analysis"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h1 id="词法分析的作用"><a href="#词法分析的作用" class="headerlink" title="词法分析的作用"></a>词法分析的作用</h1><h2 id="词法分析器的作用"><a href="#词法分析器的作用" class="headerlink" title="词法分析器的作用"></a>词法分析器的作用</h2><ul>
+<li>词法分析是读入源程序的输入字符、将它们组成词素，生成并输出一个词法单元序列，每个词法单元对应于一个词素</li>
+<li>常见的做法<ul>
+<li>由语法分析器(<strong>Parser</strong>)调用，需要的时候不断读取、生成词法单元</li>
+<li>可以避免额外的输入输出</li>
+</ul>
+</li>
+<li>在识别出词法单元之外，还会完成一些不需要生成词法单元的简单处理<ul>
+<li>比如删除注释、将多个连续的空白字符压缩成一个字符等</li>
+<li>另一种任务是将编译器生成的错误信息与源程序相关联(correlate)</li>
+</ul>
+</li>
+<li>有时，词法分析器可分为两个级联的处理阶段<ul>
+<li><strong>扫描阶段</strong>主要负责完成一些不需要生成词法单元的简单处理</li>
+<li><strong>词法分析阶段</strong>较为复杂，处理扫描阶段的输出并生成词法单元<br><img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/courses/Compilers%40NJUSE/Chapter03/1.png" alt=""></li>
+</ul>
+</li>
+</ul>
+<h2 id="词法分析-versus-语法分析"><a href="#词法分析-versus-语法分析" class="headerlink" title="词法分析 versus 语法分析"></a>词法分析 versus 语法分析</h2><p>把编译过程的分析部分划分为词法分析和语法分析阶段有如下几个原因</p>
+<ul>
+<li>简化编译器的设计（最重要的考虑）</li>
+<li>提高编译器的效率</li>
+<li>增强编译器的可移植性<ul>
+<li>输入设备相关的特殊性可被限制在词法分析器钟</li>
+</ul>
+</li>
+</ul>
+<h2 id="词法分析相关概念"><a href="#词法分析相关概念" class="headerlink" title="词法分析相关概念"></a>词法分析相关概念</h2><h3 id="词法单元（Token）"><a href="#词法单元（Token）" class="headerlink" title="词法单元（Token）"></a>词法单元（Token）</h3><ul>
+<li>包含词法单元名（token-name）和可选的属性值(attribute-value) ，即<script type="math/tex"><token {-} name, attribute{-}value></script></li>
+<li>单元名是表示某种词法单位抽象符号。语法分析器通过单元名即可确定词法单元序列的结构</li>
+</ul>
+<h3 id="模式（Pattern）"><a href="#模式（Pattern）" class="headerlink" title="模式（Pattern）"></a>模式（Pattern）</h3><ul>
+<li>描述了一个词法单元的词素可能具有的形式</li>
+<li>当词法单元是一个关键字时，它的模式就是组成这个关键字的字符序列</li>
+<li>对于标识符和其他词法单元，模式是一个更加复杂的结构，可以和很多符号串匹配</li>
+<li>可以用<strong>正则表达式</strong>来表示</li>
+</ul>
+<h3 id="词素（Lexeme）"><a href="#词素（Lexeme）" class="headerlink" title="词素（Lexeme）"></a>词素（Lexeme）</h3><ul>
+<li>源程序中的字符序列，它和某类词法单元的模式匹配，被词法分析器识别为该词法单元的实例</li>
+</ul>
+<h2 id="词法单元的属性"><a href="#词法单元的属性" class="headerlink" title="词法单元的属性"></a>词法单元的属性</h2><ul>
+<li>一个模式匹配多个词素时，必须通过属性来传递附加的信息。属性值将被用于语义分析、代码生成等阶段</li>
+<li>不同的目的需要不同的属性。因此，属性值通常是一个结构化数据</li>
+<li>词法单元id的属性<ul>
+<li>词素、类型、第一次出现的位置、……</li>
+</ul>
+</li>
+</ul>
+<h3 id="词法单元示例"><a href="#词法单元示例" class="headerlink" title="词法单元示例"></a>词法单元示例</h3><p><img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/courses/Compilers%40NJUSE/Chapter03/2.png" alt=""></p>
+<h2 id="词法错误"><a href="#词法错误" class="headerlink" title="词法错误"></a>词法错误</h2><ul>
+<li>如果没有其他组件的帮助，词法分析器很难发现源代码中的错误</li>
+<li>若无法发现错误，则让编译器的另一个阶段（如语法分析）去处理错误</li>
+<li>若出现所有词法单元的模式都无法和剩余输入的某个前缀相匹配的情况，此时词法分析器就不能继续处理输入<ul>
+<li>这种情况下最简单的错误恢复策略为“恐慌模式”恢复</li>
+<li>即，从剩余的输入中不断删除字符，指导词法分析器能够在剩余输入的开头发现一个正确的词法单元为止</li>
+</ul>
+</li>
+</ul>
+<h1 id="输入缓冲"><a href="#输入缓冲" class="headerlink" title="输入缓冲"></a>输入缓冲</h1><ul>
+<li>实践中，很多情况下我们需要至少向前多看一个字符<ul>
+<li>如，只有读取到最后一个非字母或数字的字符，才能确定我们已经达到一个标识符的末尾，因此这个字符不是<em>id</em>或词素的一部分</li>
+<li>在C语言中，像<code>-</code>、<code>=</code>、<code>&lt;</code>这样的单字符运算符也有可能是<code>-&gt;</code>、<code>==</code>、<code>&lt;=</code>这样的双字符运算符的开始字符</li>
+</ul>
+</li>
+<li>使用<strong>双缓冲区</strong>方案解决问题</li>
+</ul>
+<h2 id="缓冲区对"><a href="#缓冲区对" class="headerlink" title="缓冲区对"></a>缓冲区对</h2><p>为了减少处理大量字符的时间，利用两个交替读入的缓冲区进行字符处理<br><img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/courses/Compilers%40NJUSE/Chapter03/3.png" alt=""><br>图3.3中，<code>C</code>左侧为缓冲区1，右侧为缓冲区2</p>
+<ul>
+<li>程序为输入维护了两个指针：<ul>
+<li><strong>lexemeBegin</strong>指针：指向当前词素的开始处</li>
+<li><strong>forward</strong>指针：一直向前扫描，直到发现某个模式被匹配为止</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li>一旦确定下一个词素，forward指针将指向该词素结尾的字符</li>
+<li>前移forward指针要求我们首先检查是否已经达到eof。若是，则需要将新字符读到另一个缓冲区中，并将forward指针指向新载入字符的缓冲区头部</li>
+</ul>
+<h2 id="哨兵标记"><a href="#哨兵标记" class="headerlink" title="哨兵标记"></a>哨兵标记</h2><ul>
+<li>采用双缓冲区方案，每次向前移动forward指针，都必须要检查是否到达了缓冲区末尾</li>
+<li>每读入一个字符，都需要做两次检测<ol>
+<li>检查是否达到缓冲区的末尾</li>
+<li>确认读入的字符是什么（可能是一个多路分支选择语句）</li>
+</ol>
+</li>
+<li>通过扩展缓冲区，加入“哨兵“(sentinel)标记，把对缓冲区末端的检测和对当前字符的检测合二为一</li>
+<li>哨兵字符必须是一个不会在源程序中出现的特殊字符，可以为eof</li>
+<li><img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/courses/Compilers%40NJUSE/Chapter03/4.png" alt=""></li>
+<li>减少了检测次数<img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/courses/Compilers%40NJUSE/Chapter03/5.png" alt=""></li>
+</ul>
+<h1 id="词法单元的规约-Specification-of-Tokens"><a href="#词法单元的规约-Specification-of-Tokens" class="headerlink" title="词法单元的规约(Specification of Tokens)"></a>词法单元的规约(Specification of Tokens)</h1><blockquote>
+<p>词素-&gt;词法单元 | 第一步：如何描述词素？</p>
+</blockquote>
+<h2 id="相关概念"><a href="#相关概念" class="headerlink" title="相关概念"></a>相关概念</h2><h3 id="字母表"><a href="#字母表" class="headerlink" title="字母表"></a>字母表</h3><p>一个有限的符号集合</p>
+<ul>
+<li>二进制{0，1}</li>
+<li>ASCII</li>
+<li>Unicode</li>
+<li>典型的字母表包括字母、数位和标点符号</li>
+</ul>
+<h3 id="串"><a href="#串" class="headerlink" title="串"></a>串</h3><p>字母表中符号组成的一个有穷序列</p>
+<ul>
+<li>串$s$的长度$|s|$</li>
+<li>空串$\epsilon$，长度为0的串</li>
+<li><strong>和串有关的术语</strong>（<em>banana</em>)<ul>
+<li>前缀：从串的尾部删除0个或多个符号后得到的串（ban、banana、 ε）</li>
+<li>后缀：从串的开始处删除0个或多个符号后得到的串 （nana、banana、ε）</li>
+<li>子串：删除串的某个前缀和某个后缀得到的串 （banana、nan、 ε） </li>
+<li>真前缀、真后缀、真子串：既不等于原串，也不等于空串的前缀、后缀、子串</li>
+<li>子序列：从原串中删除0个或者多个符号后得到的串 （baan）</li>
+</ul>
+</li>
+<li><strong>串的运算</strong> <ul>
+<li>连接(concatenation)：x和y的连接时把y附加到x的后面形成的串，记作xy<ul>
+<li>x=dog，y=house，xy=doghouse</li>
+</ul>
+</li>
+<li>指数运算（幂运算）：$s^0=\epsilon$，$s^1=s$，$s^i=s^{i-1}s$<ul>
+<li>$x=dog$，$x^0=\epsilon$，$x^1=dog$，$x^3=dogdogdog$</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="语言"><a href="#语言" class="headerlink" title="语言"></a>语言</h3><p>给定字母表上一个任意的可数的<strong>串的集合</strong></p>
+<ul>
+<li>语法正确的C程序的集合，英语，汉语</li>
+<li><strong>语言上的运算</strong><ul>
+<li>并、连接、Kleene闭包、正闭包</li>
+<li><img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/courses/Compilers%40NJUSE/Chapter03/6.png" alt=""></li>
+</ul>
+</li>
+</ul>
+<h2 id="正则表达式-regular-expression"><a href="#正则表达式-regular-expression" class="headerlink" title="正则表达式(regular expression)"></a>正则表达式(regular expression)</h2><p>一种<strong>描述词素模式</strong>的重要表示方法</p>
+<ul>
+<li>正则表达式可以高效、简洁地描述处理词法单元时用到的模式类型</li>
+<li>可以描述所有通过对某个字母表上的符号应用运算符而得到的语言。其定义的集合叫做<strong>正则集合</strong>(regular set) </li>
+<li>每个<strong>正则表达式</strong>$r$可以描述一个<strong>语言</strong>$L(r)$，也即其定义的正则集合</li>
+<li>例如，C语言标识符的语言，可以用如下正则表达式来表示： <code>letter_(letter_|digit)*</code><ul>
+<li>其中，<code>letter_</code> 表示任一字母或下划线</li>
+<li><code>|</code>表示并运算</li>
+<li><code>*</code>表示零个或多个</li>
+<li><code>letter_</code>与<code>(letter_|digit)*</code>直接并列放在一起表示连接运算</li>
+</ul>
+</li>
+<li>正则表达式可以由较小的正则表达式递归构建（字母表$\Sigma$上的正则表达式的定义）<ul>
+<li>基本部分<ul>
+<li>$\epsilon$是一个正则表达式，$L(\epsilon)={\epsilon }$ </li>
+<li>如果$a$是$\Sigma$上的一个符号，那么$\textbf{a}$是正则表达式，$L(\textbf{a})={a}$ <ul>
+<li>根据惯例，通常用斜体表示符号，粗体表示它们对应的正则表达式</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>归纳步骤：<ul>
+<li>选择：$(r) | (s),L((r) | (s))=L(r) \cup L(s)$</li>
+<li>连接：$(r)(s),L((r)(s))=L(r)L(s)$ </li>
+<li>闭包：$(r)^<em>,L((r)^</em>)=(L(r))^*$</li>
+<li>括号：$(r),L((r))=L(r)$ </li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>运算的优先级：* &gt; 连接符 &gt; |</p>
+<ul>
+<li><p>$(a)|((b)^*(c))$ </p>
+<p>可以改写为 $a|b^*c$</p>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="正则表达式的性质"><a href="#正则表达式的性质" class="headerlink" title="正则表达式的性质"></a>正则表达式的性质</h3><ul>
+<li><strong>等价性</strong><ul>
+<li>如果两个正则表达式$r$和$s$表示同样的语言，则$r=s$</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li><strong>代数定律</strong><img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/courses/Compilers%40NJUSE/Chapter03/7.png" alt=""></li>
+</ul>
+<h3 id="正则定义-regular-definition"><a href="#正则定义-regular-definition" class="headerlink" title="正则定义(regular definition)"></a>正则定义(regular definition)</h3><ul>
+<li>对正则表达式命名，使表示简洁</li>
+<li>一个<strong>正则定义</strong>是具有如下形式的定义序列<img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/courses/Compilers%40NJUSE/Chapter03/8.png" alt=""></li>
+<li>各个$d_i$不在字母表$\Sigma$中，且名字都不同</li>
+<li>每个$r<em>i$都是字母表$\Sigma \cup {d_1,d_2,…,d</em>{i-1}}$上的正则表达式</li>
+<li>限制每个$r_i$中只含有$\Sigma$中的符号和它之前定义的各个$d_j$，可以避免递归定义的问题</li>
+<li>各个$d_i$在$\Sigma$上的正则表达式如下：<ul>
+<li>$d_1$的正则表达式即$r_1$ </li>
+<li>将$r_2$中的$d_1$替换为$r_1$，得到$d_2$的正则表达式</li>
+<li>… … … … </li>
+<li>将$r<em>i$中的$d_1,d_2 ,…,d</em>{i-1}$替换为各自的正则表达式，得到$d_i$的正则表达式</li>
+</ul>
+</li>
+<li>注意：替换的时候不能破坏替换进去的$d_i$的完整性<br><strong>实例</strong>：</li>
+</ul>
+<ol>
+<li>C语言标识符<img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/courses/Compilers%40NJUSE/Chapter03/9.png" alt=""></li>
+<li>无符号数（整数与浮点数）<img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/courses/Compilers%40NJUSE/Chapter03/10.png" alt=""></li>
+</ol>
+<h3 id="正则表达式的扩展"><a href="#正则表达式的扩展" class="headerlink" title="正则表达式的扩展"></a>正则表达式的扩展</h3><ul>
+<li>基本运算符：并 连接 闭包</li>
+<li>扩展运算符<ul>
+<li>一个或多个：$r^+$ , 等价于$rr^*$ </li>
+<li>零个或一个：$r?$，等价于$\epsilon|r$</li>
+<li>字符类 $[abc]$等价于$a|b|c$, $[a-z]$等价于$a|b|…|z$</li>
+</ul>
+</li>
+<li>C语言标识符可简化为<img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/courses/Compilers%40NJUSE/Chapter03/11.png" alt=""></li>
+<li>无符号数表示可简化为<img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/courses/Compilers%40NJUSE/Chapter03/12.png" alt=""></li>
+</ul>
+<h3 id="实操公式总结"><a href="#实操公式总结" class="headerlink" title="实操公式总结"></a>实操公式总结</h3><p><img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/courses/Compilers%40NJUSE/Chapter03/13.png" alt=""></p>
+<h3 id="附注"><a href="#附注" class="headerlink" title="附注"></a>附注</h3><ul>
+<li>正则表达式是一种描述手段，通常用来描述程序语言的词法符号</li>
+<li>很多编辑器支持正则表达式</li>
+<li>工具GREP</li>
+</ul>
+<h1 id="词法单元的识别-Recognition-of-Tokens"><a href="#词法单元的识别-Recognition-of-Tokens" class="headerlink" title="词法单元的识别(Recognition of Tokens)"></a>词法单元的识别(Recognition of Tokens)</h1><blockquote>
+<p>词素-&gt;词法单元 | 第二步：如何识别词法单元？</p>
+</blockquote>
+<ul>
+<li>词法分析器要求能够检查输入字符串，在<strong>前缀</strong>中找出和某个模式匹配的词素<ul>
+<li>首先通过正则定义来描述各种词法单元的模式<ul>
+<li>条件分支语句的文法<img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/courses/Compilers%40NJUSE/Chapter03/14.png" alt=""></li>
+<li>上例中词法单元的模式<img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/courses/Compilers%40NJUSE/Chapter03/15.png" alt=""></li>
+<li>词法单元、模式以及属性值<img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/courses/Compilers%40NJUSE/Chapter03/16.png" alt=""></li>
+</ul>
+</li>
+<li>定义$ws\rightarrow(blank | tab | newline)^+$来消除空白<ul>
+<li>词法分析器识别到这个模式时，不返回词法单元，继续识别其它模式</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="状态转换图-transition-diagram"><a href="#状态转换图-transition-diagram" class="headerlink" title="状态转换图(transition diagram)"></a>状态转换图(transition diagram)</h2><ul>
+<li>状态转换图是词法分析器的重要组件之一 </li>
+<li>可以将正则表达式转换成状态转换图</li>
+<li><strong>状态转换图(transition diagram)</strong><ul>
+<li>状态(state)：表示在识别词素的过程中可能出现的情况<ul>
+<li>状态看作是已处理部分的总结</li>
+<li>某些状态为<em>接受状态</em>或<em>最终状态</em>，表明已经找到词素 </li>
+<li>加上 * 的接受状态表示最后读入的符号不在词素中</li>
+<li><em>开始状态（初始状态）</em>：用start边表示 </li>
+</ul>
+</li>
+<li>边(edge)：从一个状态指向另一个状态；边的标号是一个或者多个符号 ◼ <ul>
+<li>如果当前符号为s，下一个输入符号为a，就沿着从s离开，标号为a的边到达下一个状态</li>
+</ul>
+</li>
+<li>e.g.词法单元relop的状态转换图<img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/courses/Compilers%40NJUSE/Chapter03/17.png" alt=""></li>
+</ul>
+</li>
+</ul>
+<h3 id="保留字和标识符的识别"><a href="#保留字和标识符的识别" class="headerlink" title="保留字和标识符的识别"></a>保留字和标识符的识别</h3><ul>
+<li>在很多程序设计语言中，保留字也符合标识符的模式，识别标识符的状态转换图也会识别保留字<img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/courses/Compilers%40NJUSE/Chapter03/18.png" alt=""></li>
+<li>解决方法<ul>
+<li>在符号表中预先填写保留字，并指明它们不是普通标识符</li>
+<li>为关键字/保留字建立单独的状态转换图。并设定保留字的优先级高于标识符（图中为假想的关键字then的状态转换图）<img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/courses/Compilers%40NJUSE/Chapter03/19.png" alt=""></li>
+</ul>
+</li>
+</ul>
+<h3 id="例子"><a href="#例子" class="headerlink" title="例子"></a>例子</h3><ul>
+<li><strong>无符号数字的状态转换图</strong><ul>
+<li><img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/courses/Compilers%40NJUSE/Chapter03/20.png" alt=""></li>
+<li><img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/courses/Compilers%40NJUSE/Chapter03/21.png" alt=""></li>
+</ul>
+</li>
+<li><strong>空白符的状态装换图</strong><ul>
+<li><img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/courses/Compilers%40NJUSE/Chapter03/22.png" alt=""></li>
+</ul>
+</li>
+</ul>
+<h2 id="有穷自动机-finite-automata"><a href="#有穷自动机-finite-automata" class="headerlink" title="有穷自动机(finite automata)"></a>有穷自动机(finite automata)</h2><ul>
+<li>本质上等价于状态转换图，图中的结点是状态，带有标号的边表示自动机的转换函数</li>
+<li>区别在于：<ul>
+<li>自动机是识别器，对每个输入串回答yes or no</li>
+</ul>
+</li>
+<li><p>分为两类</p>
+<ul>
+<li>不确定的有穷自动机（Nondeterministic Finite Automaton，<strong>NFA</strong>）</li>
+<li>确定的有穷状态自动机（Deterministic Finite Automaton，<strong>DFA</strong>）</li>
+<li><p>两者异同</p>
+<ul>
+<li><p>不同：</p>
+<ul>
+<li>NFA: 一个符号标记离开同一状态的多条边</li>
+<li><p>DFA: 对于每个状态和字母表中的每个字符，有且仅有一条离开该状态、以该符合为标号的边</p>
+</li>
+<li><p>NFA: 可以有边的标号是$\epsilon$</p>
+</li>
+<li>DFA: 没有标记为$\epsilon$的边</li>
+</ul>
+</li>
+<li>相同：<ul>
+<li>都可以识别正则语言，两者之间存在等价性</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="不确定的有穷自动机-NFA"><a href="#不确定的有穷自动机-NFA" class="headerlink" title="不确定的有穷自动机(NFA)"></a>不确定的有穷自动机(NFA)</h3><ul>
+<li>NFA由以下几部分组成<ul>
+<li>一个有穷的状态集合$S$</li>
+<li>一个输入符号集合$\Sigma$（input alphabet）</li>
+<li>转换函数（transition function）对于每个状态和$\Sigma \cup {\epsilon }$中的符号，给出相应的后继状态集合</li>
+<li>一个状态$S_0$被指定为开始状态/初始状态</li>
+<li>$S$的一个子集$F$被指定为接受状态</li>
+</ul>
+</li>
+<li><em>例子</em>：一个能够识别正则表达式$(a|b)^*abb$的语言的NFA的转换图<img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/courses/Compilers%40NJUSE/Chapter03/23.png" alt=""><ul>
+<li>状态集合$S={0,1,2,3}$</li>
+<li>开始状态$0$ </li>
+<li>接受状态集合${3}$</li>
+<li>转换函数：<ul>
+<li>$(0,a)\rightarrow{0,1}$</li>
+<li>$(0,b)\rightarrow{0}$</li>
+<li>$(1,b)\rightarrow 2$</li>
+<li>$(2,b)\rightarrow3$</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="转换表"><a href="#转换表" class="headerlink" title="转换表"></a>转换表</h3><p>NFA可以表示为一个转换表<img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/courses/Compilers%40NJUSE/Chapter03/24.png" alt=""></p>
+<ul>
+<li>表的各行对应于状态 </li>
+<li>各列对应于输入符号和$\epsilon$</li>
+<li>表中的元素表示给定状态在给定输入下的后继状态</li>
+</ul>
+<h3 id="自动机对输入字符串的接受"><a href="#自动机对输入字符串的接受" class="headerlink" title="自动机对输入字符串的接受"></a>自动机对输入字符串的接受</h3><ul>
+<li>一个NFA接受输入字符串x，当且仅当对应的转换图中存在一条从开始状态到某个接受状态的路径，使得该路径中各条边上的标号组成符号串x （路径中可能包含$\epsilon$边）</li>
+<li>下图对应的NFA能够接受aabb<img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/courses/Compilers%40NJUSE/Chapter03/25.png" alt=""><ul>
+<li><img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/courses/Compilers%40NJUSE/Chapter03/26.png" alt=""></li>
+<li>可能会从在具有相同标号序列，但是到达不同状态的路径，这不影响上述结论。只要<strong>存在某条</strong>能够从开始状态到达接受状态的路径，NFA就接受这个符号串<img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/courses/Compilers%40NJUSE/Chapter03/27.png" alt=""></li>
+</ul>
+</li>
+</ul>
+<h3 id="自动机与语言"><a href="#自动机与语言" class="headerlink" title="自动机与语言"></a>自动机与语言</h3><p>由一个NFA定义（接受）的语言是从开始状态到某个接受状态的所有路径上的符号串集合，称为$L(A)$</p>
+<ul>
+<li>响应的语言：$L(aa^<em>|bb^</em>)$<img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/courses/Compilers%40NJUSE/Chapter03/28.png" alt=""></li>
+</ul>
+<h3 id="确定有穷自动机-DFA"><a href="#确定有穷自动机-DFA" class="headerlink" title="确定有穷自动机(DFA)"></a>确定有穷自动机(DFA)</h3><ul>
+<li>一个NFA被称为DFA，如果<ul>
+<li>没有$\epsilon$之上的转换动作</li>
+<li>对于每个状态$s$和每个输入符号a，有且只有一条标号为a的边 </li>
+</ul>
+</li>
+<li>可以高效判断一个串能否被一个DFA接受</li>
+<li>每个NFA都有一个等价的DFA，即它们接受同样的语言<br><strong>DFA的模拟</strong><br><img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/courses/Compilers%40NJUSE/Chapter03/29.png" alt=""></li>
+<li>假设输入符号就是字符串中的符号</li>
+<li>Nextchar读入下一个字符（符号）</li>
+<li>move给出了离开s，标号为c的边的目标状态<br><em>例子</em><br>接受$(a|b)^*abb$的DFA<img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/courses/Compilers%40NJUSE/Chapter03/30.png" alt=""></li>
+</ul>
+<h2 id="从正则表达式到自动机"><a href="#从正则表达式到自动机" class="headerlink" title="从正则表达式到自动机"></a>从正则表达式到自动机</h2><ul>
+<li>正则表达式可以简洁、精确地描述词法单元的模式</li>
+<li>进行模式匹配时，模拟DFA的执行比模拟NFA更为简单有效<ul>
+<li>$\epsilon$的模拟，难</li>
+<li>不确定性的模拟，难 </li>
+</ul>
+</li>
+<li>因此，需要将正则表达式转换为DFA</li>
+<li>步骤： <ol>
+<li>正则表达式到NFA </li>
+<li>NFA到DFA</li>
+</ol>
+</li>
+</ul>
+<h3 id="从NFA到DFA的转换-子集构造算法"><a href="#从NFA到DFA的转换-子集构造算法" class="headerlink" title="从NFA到DFA的转换-子集构造算法"></a>从NFA到DFA的转换-子集构造算法</h3><ul>
+<li>对NFA的模拟往往不如对DFA的模拟直接， 除非转换花费更多的时间 </li>
+<li>基本思想： DFA每个状态$\leftarrow \rightarrow$NFA一个状态集<ul>
+<li>“并行地模拟” NFA在遇到一个给定输入串时可能执行的所有动作</li>
+<li>构造得到的DFA的每个状态和NFA的状态子集对应</li>
+<li>DFA读入$a_1 ,a_2 ,…,a_n$后到达的状态对应于从NFA开始状态出发沿着$a_1 ,a_2 ,…,a_n$可能到达的状态集合</li>
+</ul>
+</li>
+<li>理论上，最坏情况下DFA的状态个数会是NFA状态个数的指数多个。但是对于大部分应用，NFA和相应的DFA的状态数量大致相同<br><strong>子集构造算法</strong></li>
+<li>输入：一个NFA $N$ </li>
+<li>输出：一个接受相同语言的DFA $D$</li>
+<li>算法为$D$构造一个转换表$Dtran$</li>
+<li>s表示$N$中的单个状态，T代表$N$的一个状态集<img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/courses/Compilers%40NJUSE/Chapter03/31.png" alt=""></li>
+<li>$D$的开始状态是$\epsilon-closure(s_0 )$，$D$的接受状态是所有至少包含了$N$的一个接受状态的状态集合<img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/courses/Compilers%40NJUSE/Chapter03/32.png" alt=""></li>
+<li>对NFA的任何状态集合$\epsilon-closure(T)$的计算(<em>一个图搜索过程</em>)<img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/courses/Compilers%40NJUSE/Chapter03/33.png" alt=""></li>
+</ul>
+<h3 id="对NFA的运行进行模拟-子集构造算法"><a href="#对NFA的运行进行模拟-子集构造算法" class="headerlink" title="对NFA的运行进行模拟-子集构造算法"></a>对NFA的运行进行模拟-子集构造算法</h3><ul>
+<li>输入：一个以文件结束符eof结尾的输入串x，一 个NFA $N$，其开始状态是$S_0$，接受状态集为$F$， 转换函数为move</li>
+<li>输出：如果$N$接受x，返回yes，否则返回no</li>
+<li><img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/courses/Compilers%40NJUSE/Chapter03/34.png" alt=""></li>
+</ul>
+<h3 id="正则表达式到NFA"><a href="#正则表达式到NFA" class="headerlink" title="正则表达式到NFA"></a>正则表达式到NFA</h3><ul>
+<li>输入：字母表$\Sigma$上的一个正则表达式$r$</li>
+<li>输出：一个接受$L(r)$的NFA $N$ </li>
+<li>基本思想<ul>
+<li>根据正则表达式的递归定义，按照正则表达式的结构递归地构造出相应的NFA</li>
+<li>算法分成两个部分：<ul>
+<li>基本规则处理$\epsilon$和单符号的情况</li>
+<li>对于每个正则表达式的运算，建立构造相应NFA的方法<br><strong>转换算法</strong></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>基本规则<ul>
+<li>表达式$\epsilon$<img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/courses/Compilers%40NJUSE/Chapter03/35.png" alt=""></li>
+<li>表达式a<img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/courses/Compilers%40NJUSE/Chapter03/36.png" alt=""></li>
+</ul>
+</li>
+<li>归纳规则<ul>
+<li>正则表达式$s$和$t$的NFA分别是$N(s)$和$N(t)$</li>
+<li>$r=s|t$， $r$的NFA $N(r)$<img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/courses/Compilers%40NJUSE/Chapter03/37.png" alt=""></li>
+<li>$r=st$， $r$的NFA $N(r)$<img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/courses/Compilers%40NJUSE/Chapter03/38.png" alt=""></li>
+<li>$r=s^*$，$r$的NFA $N(r)$<img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/courses/Compilers%40NJUSE/Chapter03/39.png" alt=""></li>
+<li>$r=(s), N(r)=N(s)$</li>
+</ul>
+</li>
+</ul>
+<h2 id="基于DFA的模式匹配器的优化"><a href="#基于DFA的模式匹配器的优化" class="headerlink" title="基于DFA的模式匹配器的优化"></a>基于DFA的模式匹配器的优化</h2><ul>
+<li>DFA化简：状态数最小化</li>
+<li>等价的DFA可能具有不同的状态个数</li>
+<li>任何正则语言都有一个唯一的（不计同构）状态数目最少的DFA</li>
+</ul>
+<h3 id="DFA状态最小化"><a href="#DFA状态最小化" class="headerlink" title="DFA状态最小化"></a>DFA状态最小化</h3><ul>
+<li>原理：将一个DFA的状态集合<strong>分划</strong>成多个组，每个组中的各状态之间相互<strong>不可区分</strong>，然后将每个组中的状态<strong>合并</strong>成状态最少DFA的一个状态</li>
+<li>可区分的定义：<ul>
+<li>如果分别从状态s和状态t出发，沿着标号为x的路径到达的两个状态只有一个是接受状态，称为x区分状态s和t</li>
+<li>如果存在能够区分s和t的串，那么它们就是可区分的<br><strong>最小化算法</strong></li>
+</ul>
+</li>
+</ul>
+<blockquote>
+<p>分划部分</p>
+</blockquote>
+<ol>
+<li>设置初始分划$\Pi={S-F,F}$ </li>
+<li>迭代，不断分划： <img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/courses/Compilers%40NJUSE/Chapter03/40.png" alt=""></li>
+<li>如果$\Pi<em>{new} == \Pi$，令$\Pi</em>{final} == \Pi$，转步骤4；否则$\Pi==\Pi_{new}$，转步骤2</li>
+</ol>
+<blockquote>
+<p>构造部分</p>
+</blockquote>
+<ol>
+<li>在$\Pi_{final}$的每个组中选择一个状态作代表， 作为最小DFA的状态<ul>
+<li>开始状态就是中包含原开始状态的组的代表</li>
+<li>接受状态就是包含了原接受状态的组的代表</li>
+<li>转化关系构造如下： <ul>
+<li>如果s是中G的代表，而s在a上的转换到达t，而t所在组的代表为r，那么最小DFA中有从s到r的、在a上的转换</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h3 id="DFA最小化的正确性证明"><a href="#DFA最小化的正确性证明" class="headerlink" title="DFA最小化的正确性证明"></a>DFA最小化的正确性证明</h3><ul>
+<li>位于$\Pi_{final}$的同一组中的状态不可能被任意串区分</li>
+<li>$\Pi_{final}$的不同组的状态之间是可区分的</li>
+</ul>
+<h1 id="词法分析器的构造实现"><a href="#词法分析器的构造实现" class="headerlink" title="词法分析器的构造实现"></a>词法分析器的构造实现</h1><ul>
+<li>两种方法<ul>
+<li>基于词法单元的<strong>词法结构图</strong>或其它描述，手工编写代码扫描输入中的每个词素，并返回识别到的 词法单元信息</li>
+<li>使用词法分析器生成工具（如lex /flex），给出描述词素的<strong>模式</strong>，利用工具编译为具有词法分析器 功能的代码，高效且简单</li>
+</ul>
+</li>
+<li><strong>正则表达式</strong></li>
+</ul>
+<h2 id="基于状态转换图的词法分析器"><a href="#基于状态转换图的词法分析器" class="headerlink" title="基于状态转换图的词法分析器"></a>基于状态转换图的词法分析器</h2><ul>
+<li>从转换图构造词法分析器的方法<ul>
+<li>变量state记录当前状态</li>
+<li>一个switch根据state的值转到相应的代码</li>
+<li>每个状态对应于一段代码<ul>
+<li>这段代码根据读入的符号，确定下一个状态</li>
+<li>如果找不到相应的边，则调用<code>fail()</code>进行错误恢复</li>
+</ul>
+</li>
+<li>进入某个接受状态时，返回相应的词法单元<ul>
+<li>注意状态有*标记时，需要回退forward指针</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="多个模式集成到词法分析器"><a href="#多个模式集成到词法分析器" class="headerlink" title="多个模式集成到词法分析器"></a>多个模式集成到词法分析器</h2><ul>
+<li>方法1：词法分析器需要匹配多个模式（有多个状态转换图） <ul>
+<li>顺序的尝试各个词法单元的状态转换图，如果引发fail，回退并启动下一个状态转换图<ul>
+<li>次序问题</li>
+<li>优先级</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>方法2：并行的运行各个状态转换图<ul>
+<li>一个图已经匹配到词素，另一个仍在继续读入</li>
+<li>取最长的和某个模式匹配的输入前缀（词法单元）</li>
+</ul>
+</li>
+<li>方法3：所有的状态转换图合并为一个图 <ul>
+<li>选择策略同方法2 </li>
+<li>书中例子简单，因为没有两类词法单元以相同的字</li>
+</ul>
+</li>
+</ul>
+<h2 id="词法分析器生成工具的设计"><a href="#词法分析器生成工具的设计" class="headerlink" title="词法分析器生成工具的设计"></a>词法分析器生成工具的设计</h2><ul>
+<li>词法分析器生成工具的体系结构<img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/courses/Compilers%40NJUSE/Chapter03/41.png" alt=""><ul>
+<li>Lex program：正则表达式</li>
+<li>Trasition table | Actions：转换为自动机</li>
+<li>Automaton simulator：模拟自动机的执行</li>
+</ul>
+</li>
+</ul>
+<h3 id="自动机构建"><a href="#自动机构建" class="headerlink" title="自动机构建"></a>自动机构建</h3><p><img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/courses/Compilers%40NJUSE/Chapter03/42.png" alt=""></p>
+<ul>
+<li>把Lex程序中的每个正则表达式转换成NFA</li>
+<li>由于自动机需要识别所有与Lex程序中的模式相匹配的词素，因此我们需要将这些NFA合并为一个NFA</li>
+<li>引入一个新的开始状态， 从这个新状态到各个对应于模式$p_i$的NFA $N_i$的开始状态各有一个$\epsilon$转换</li>
+</ul>
+<h2 id="基于NFA的模式匹配"><a href="#基于NFA的模式匹配" class="headerlink" title="基于NFA的模式匹配"></a>基于NFA的模式匹配</h2><ul>
+<li>词法分析器模拟NFA的运行，直到到达一个没有后续状态的输入点</li>
+<li>沿着状态集顺序回找，直到找到一个包含一个或多个接受状态的集合为止。如果集合中有多个接受状态，我们就选择和在Lex程序中位置最靠前的模式相关联的接受状态$p_i$，执行相应对应$A_i$</li>
+</ul>
+<h2 id="使用DFA的词法分析器"><a href="#使用DFA的词法分析器" class="headerlink" title="使用DFA的词法分析器"></a>使用DFA的词法分析器</h2><ul>
+<li>将NFA转换成DFA之后，由词法分析器模拟DFA的运行</li>
+<li>如果一个DFA的状态含有一个或多个NFA的接受状态，那么就要确定哪些模式的接受状态出现在此DFA的状态中，并找出第一个这样的模式，再给出该模式的输出</li>
+</ul>
+<h2 id="词法分析器的状态最小化"><a href="#词法分析器的状态最小化" class="headerlink" title="词法分析器的状态最小化"></a>词法分析器的状态最小化</h2><ul>
+<li>词法分析器中的不同接受状态对应于不同的模式，因此需要有不同于DFA化简的初始划分 </li>
+<li>初始分划为：所有非接受状态集合+对应于各个模式的接受状态集合</li>
+</ul>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">文章作者: </span><span class="post-copyright-info"><a href="http://rashawnxue.github.io">RashawnXue</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">文章链接: </span><span class="post-copyright-info"><a href="http://rashawnxue.github.io/2023/03/08/courses/NJUSE/Compilers@NJUSE/Compilers-NJUSE-Chapter03/">http://rashawnxue.github.io/2023/03/08/courses/NJUSE/Compilers@NJUSE/Compilers-NJUSE-Chapter03/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="http://rashawnxue.github.io" target="_blank">Rashawn's Blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"></div><div class="post_share"><div class="social-share" data-image="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/icon/avatar-icon-square.png" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/2023/04/18/courses/NJUSE/OS@NJUSE/OS-NJUSE-Chapter02-md/" title="OS@NJUSE-Chapter02 处理器管理文件"><div class="cover" style="background: var(--default-bg-color)"></div><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">OS@NJUSE-Chapter02 处理器管理文件</div></div></a></div><div class="next-post pull-right"><a href="/2023/03/08/courses/NJUSE/Compilers@NJUSE/Compilers-NJUSE-Chapter02/" title="Compilers@NJUSE-Chapter02 A Simple Syntax-Directed Translator"><div class="cover" style="background: var(--default-bg-color)"></div><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">Compilers@NJUSE-Chapter02 A Simple Syntax-Directed Translator</div></div></a></div></nav></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src="https://rashawn-blog.oss-cn-shanghai.aliyuncs.com/blog/icon/avatar-icon-square.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">RashawnXue</div><div class="author-info__description"></div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">33</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">5</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">10</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/RashawnXue"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons is-center"><a class="social-icon" href="https://github.com/RashawnXue" target="_blank" title="Github"><i class="fab fa-github"></i></a><a class="social-icon" href="mailto:ruichenxue@smail.nju.edu.cn" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%AF%8D%E6%B3%95%E5%88%86%E6%9E%90%E7%9A%84%E4%BD%9C%E7%94%A8"><span class="toc-number">1.</span> <span class="toc-text">词法分析的作用</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%AF%8D%E6%B3%95%E5%88%86%E6%9E%90%E5%99%A8%E7%9A%84%E4%BD%9C%E7%94%A8"><span class="toc-number">1.1.</span> <span class="toc-text">词法分析器的作用</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%AF%8D%E6%B3%95%E5%88%86%E6%9E%90-versus-%E8%AF%AD%E6%B3%95%E5%88%86%E6%9E%90"><span class="toc-number">1.2.</span> <span class="toc-text">词法分析 versus 语法分析</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%AF%8D%E6%B3%95%E5%88%86%E6%9E%90%E7%9B%B8%E5%85%B3%E6%A6%82%E5%BF%B5"><span class="toc-number">1.3.</span> <span class="toc-text">词法分析相关概念</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%AF%8D%E6%B3%95%E5%8D%95%E5%85%83%EF%BC%88Token%EF%BC%89"><span class="toc-number">1.3.1.</span> <span class="toc-text">词法单元（Token）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%A8%A1%E5%BC%8F%EF%BC%88Pattern%EF%BC%89"><span class="toc-number">1.3.2.</span> <span class="toc-text">模式（Pattern）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%AF%8D%E7%B4%A0%EF%BC%88Lexeme%EF%BC%89"><span class="toc-number">1.3.3.</span> <span class="toc-text">词素（Lexeme）</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%AF%8D%E6%B3%95%E5%8D%95%E5%85%83%E7%9A%84%E5%B1%9E%E6%80%A7"><span class="toc-number">1.4.</span> <span class="toc-text">词法单元的属性</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%AF%8D%E6%B3%95%E5%8D%95%E5%85%83%E7%A4%BA%E4%BE%8B"><span class="toc-number">1.4.1.</span> <span class="toc-text">词法单元示例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%AF%8D%E6%B3%95%E9%94%99%E8%AF%AF"><span class="toc-number">1.5.</span> <span class="toc-text">词法错误</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%BE%93%E5%85%A5%E7%BC%93%E5%86%B2"><span class="toc-number">2.</span> <span class="toc-text">输入缓冲</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BC%93%E5%86%B2%E5%8C%BA%E5%AF%B9"><span class="toc-number">2.1.</span> <span class="toc-text">缓冲区对</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%93%A8%E5%85%B5%E6%A0%87%E8%AE%B0"><span class="toc-number">2.2.</span> <span class="toc-text">哨兵标记</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%AF%8D%E6%B3%95%E5%8D%95%E5%85%83%E7%9A%84%E8%A7%84%E7%BA%A6-Specification-of-Tokens"><span class="toc-number">3.</span> <span class="toc-text">词法单元的规约(Specification of Tokens)</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9B%B8%E5%85%B3%E6%A6%82%E5%BF%B5"><span class="toc-number">3.1.</span> <span class="toc-text">相关概念</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AD%97%E6%AF%8D%E8%A1%A8"><span class="toc-number">3.1.1.</span> <span class="toc-text">字母表</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%B2"><span class="toc-number">3.1.2.</span> <span class="toc-text">串</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%AF%AD%E8%A8%80"><span class="toc-number">3.1.3.</span> <span class="toc-text">语言</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%AD%A3%E5%88%99%E8%A1%A8%E8%BE%BE%E5%BC%8F-regular-expression"><span class="toc-number">3.2.</span> <span class="toc-text">正则表达式(regular expression)</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%AD%A3%E5%88%99%E8%A1%A8%E8%BE%BE%E5%BC%8F%E7%9A%84%E6%80%A7%E8%B4%A8"><span class="toc-number">3.2.1.</span> <span class="toc-text">正则表达式的性质</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%AD%A3%E5%88%99%E5%AE%9A%E4%B9%89-regular-definition"><span class="toc-number">3.2.2.</span> <span class="toc-text">正则定义(regular definition)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%AD%A3%E5%88%99%E8%A1%A8%E8%BE%BE%E5%BC%8F%E7%9A%84%E6%89%A9%E5%B1%95"><span class="toc-number">3.2.3.</span> <span class="toc-text">正则表达式的扩展</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AE%9E%E6%93%8D%E5%85%AC%E5%BC%8F%E6%80%BB%E7%BB%93"><span class="toc-number">3.2.4.</span> <span class="toc-text">实操公式总结</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%99%84%E6%B3%A8"><span class="toc-number">3.2.5.</span> <span class="toc-text">附注</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%AF%8D%E6%B3%95%E5%8D%95%E5%85%83%E7%9A%84%E8%AF%86%E5%88%AB-Recognition-of-Tokens"><span class="toc-number">4.</span> <span class="toc-text">词法单元的识别(Recognition of Tokens)</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%8A%B6%E6%80%81%E8%BD%AC%E6%8D%A2%E5%9B%BE-transition-diagram"><span class="toc-number">4.1.</span> <span class="toc-text">状态转换图(transition diagram)</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BF%9D%E7%95%99%E5%AD%97%E5%92%8C%E6%A0%87%E8%AF%86%E7%AC%A6%E7%9A%84%E8%AF%86%E5%88%AB"><span class="toc-number">4.1.1.</span> <span class="toc-text">保留字和标识符的识别</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BE%8B%E5%AD%90"><span class="toc-number">4.1.2.</span> <span class="toc-text">例子</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9C%89%E7%A9%B7%E8%87%AA%E5%8A%A8%E6%9C%BA-finite-automata"><span class="toc-number">4.2.</span> <span class="toc-text">有穷自动机(finite automata)</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%8D%E7%A1%AE%E5%AE%9A%E7%9A%84%E6%9C%89%E7%A9%B7%E8%87%AA%E5%8A%A8%E6%9C%BA-NFA"><span class="toc-number">4.2.1.</span> <span class="toc-text">不确定的有穷自动机(NFA)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%BD%AC%E6%8D%A2%E8%A1%A8"><span class="toc-number">4.2.2.</span> <span class="toc-text">转换表</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%87%AA%E5%8A%A8%E6%9C%BA%E5%AF%B9%E8%BE%93%E5%85%A5%E5%AD%97%E7%AC%A6%E4%B8%B2%E7%9A%84%E6%8E%A5%E5%8F%97"><span class="toc-number">4.2.3.</span> <span class="toc-text">自动机对输入字符串的接受</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%87%AA%E5%8A%A8%E6%9C%BA%E4%B8%8E%E8%AF%AD%E8%A8%80"><span class="toc-number">4.2.4.</span> <span class="toc-text">自动机与语言</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%A1%AE%E5%AE%9A%E6%9C%89%E7%A9%B7%E8%87%AA%E5%8A%A8%E6%9C%BA-DFA"><span class="toc-number">4.2.5.</span> <span class="toc-text">确定有穷自动机(DFA)</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BB%8E%E6%AD%A3%E5%88%99%E8%A1%A8%E8%BE%BE%E5%BC%8F%E5%88%B0%E8%87%AA%E5%8A%A8%E6%9C%BA"><span class="toc-number">4.3.</span> <span class="toc-text">从正则表达式到自动机</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BB%8ENFA%E5%88%B0DFA%E7%9A%84%E8%BD%AC%E6%8D%A2-%E5%AD%90%E9%9B%86%E6%9E%84%E9%80%A0%E7%AE%97%E6%B3%95"><span class="toc-number">4.3.1.</span> <span class="toc-text">从NFA到DFA的转换-子集构造算法</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AF%B9NFA%E7%9A%84%E8%BF%90%E8%A1%8C%E8%BF%9B%E8%A1%8C%E6%A8%A1%E6%8B%9F-%E5%AD%90%E9%9B%86%E6%9E%84%E9%80%A0%E7%AE%97%E6%B3%95"><span class="toc-number">4.3.2.</span> <span class="toc-text">对NFA的运行进行模拟-子集构造算法</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%AD%A3%E5%88%99%E8%A1%A8%E8%BE%BE%E5%BC%8F%E5%88%B0NFA"><span class="toc-number">4.3.3.</span> <span class="toc-text">正则表达式到NFA</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9F%BA%E4%BA%8EDFA%E7%9A%84%E6%A8%A1%E5%BC%8F%E5%8C%B9%E9%85%8D%E5%99%A8%E7%9A%84%E4%BC%98%E5%8C%96"><span class="toc-number">4.4.</span> <span class="toc-text">基于DFA的模式匹配器的优化</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#DFA%E7%8A%B6%E6%80%81%E6%9C%80%E5%B0%8F%E5%8C%96"><span class="toc-number">4.4.1.</span> <span class="toc-text">DFA状态最小化</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#DFA%E6%9C%80%E5%B0%8F%E5%8C%96%E7%9A%84%E6%AD%A3%E7%A1%AE%E6%80%A7%E8%AF%81%E6%98%8E"><span class="toc-number">4.4.2.</span> <span class="toc-text">DFA最小化的正确性证明</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%AF%8D%E6%B3%95%E5%88%86%E6%9E%90%E5%99%A8%E7%9A%84%E6%9E%84%E9%80%A0%E5%AE%9E%E7%8E%B0"><span class="toc-number">5.</span> <span class="toc-text">词法分析器的构造实现</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9F%BA%E4%BA%8E%E7%8A%B6%E6%80%81%E8%BD%AC%E6%8D%A2%E5%9B%BE%E7%9A%84%E8%AF%8D%E6%B3%95%E5%88%86%E6%9E%90%E5%99%A8"><span class="toc-number">5.1.</span> <span class="toc-text">基于状态转换图的词法分析器</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%A4%9A%E4%B8%AA%E6%A8%A1%E5%BC%8F%E9%9B%86%E6%88%90%E5%88%B0%E8%AF%8D%E6%B3%95%E5%88%86%E6%9E%90%E5%99%A8"><span class="toc-number">5.2.</span> <span class="toc-text">多个模式集成到词法分析器</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%AF%8D%E6%B3%95%E5%88%86%E6%9E%90%E5%99%A8%E7%94%9F%E6%88%90%E5%B7%A5%E5%85%B7%E7%9A%84%E8%AE%BE%E8%AE%A1"><span class="toc-number">5.3.</span> <span class="toc-text">词法分析器生成工具的设计</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%87%AA%E5%8A%A8%E6%9C%BA%E6%9E%84%E5%BB%BA"><span class="toc-number">5.3.1.</span> <span class="toc-text">自动机构建</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9F%BA%E4%BA%8ENFA%E7%9A%84%E6%A8%A1%E5%BC%8F%E5%8C%B9%E9%85%8D"><span class="toc-number">5.4.</span> <span class="toc-text">基于NFA的模式匹配</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BD%BF%E7%94%A8DFA%E7%9A%84%E8%AF%8D%E6%B3%95%E5%88%86%E6%9E%90%E5%99%A8"><span class="toc-number">5.5.</span> <span class="toc-text">使用DFA的词法分析器</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%AF%8D%E6%B3%95%E5%88%86%E6%9E%90%E5%99%A8%E7%9A%84%E7%8A%B6%E6%80%81%E6%9C%80%E5%B0%8F%E5%8C%96"><span class="toc-number">5.6.</span> <span class="toc-text">词法分析器的状态最小化</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/04/18/courses/NJUSE/SECII@NJUSE/SECII-NJUSE-Chapter09/" title="SECII@NJUSE-Chapter09 软件体系结构基础">SECII@NJUSE-Chapter09 软件体系结构基础</a><time datetime="2023-04-18T12:07:18.000Z" title="发表于 2023-04-18 20:07:18">2023-04-18</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/04/18/courses/NJUSE/SECII@NJUSE/SECII-NJUSE-Chapter08/" title="SECII@NJUSE-Chapter08 软件设计基础">SECII@NJUSE-Chapter08 软件设计基础</a><time datetime="2023-04-18T12:07:13.000Z" title="发表于 2023-04-18 20:07:13">2023-04-18</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/04/18/courses/NJUSE/SECII@NJUSE/SECII-NJUSE-Chapter07/" title="SECII@NJUSE-Chapter07 需求文档化与验证">SECII@NJUSE-Chapter07 需求文档化与验证</a><time datetime="2023-04-18T12:07:05.000Z" title="发表于 2023-04-18 20:07:05">2023-04-18</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/04/18/courses/NJUSE/SECII@NJUSE/SECII-NJUSE-Chapter06/" title="SECII@NJUSE-Chapter06 需求分析方法">SECII@NJUSE-Chapter06 需求分析方法</a><time datetime="2023-04-18T12:07:04.000Z" title="发表于 2023-04-18 20:07:04">2023-04-18</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/04/18/courses/NJUSE/SECII@NJUSE/SECII-NJUSE-Chapter05/" title="SECII@NJUSE-Chapter05 需求基础">SECII@NJUSE-Chapter05 需求基础</a><time datetime="2023-04-18T12:07:03.000Z" title="发表于 2023-04-18 20:07:03">2023-04-18</time></div></div></div></div></div></div></main><footer id="footer" style="background: url"><div id="footer-wrap"><div class="copyright">&copy;2023 By RashawnXue</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text">O ever youthful. O ever weeping.</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page/instantpage.min.js" type="module"></script><div class="js-pjax"><script>if (!window.MathJax) {
+  window.MathJax = {
+    tex: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"]],
+      tags: 'ams'
+    },
+    chtml: {
+      scale: 1.1
+    },
+    options: {
+      renderActions: {
+        findScript: [10, doc => {
+          for (const node of document.querySelectorAll('script[type^="math/tex"]')) {
+            const display = !!node.type.match(/; *mode=display/)
+            const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display)
+            const text = document.createTextNode('')
+            node.parentNode.replaceChild(text, node)
+            math.start = {node: text, delim: '', n: 0}
+            math.end = {node: text, delim: '', n: 0}
+            doc.math.push(math)
+          }
+        }, ''],
+        insertScript: [200, () => {
+          document.querySelectorAll('mjx-container').forEach(node => {
+            if (node.hasAttribute('display')) {
+              btf.wrap(node, 'div', { class: 'mathjax-overflow' })
+            } else {
+              btf.wrap(node, 'span', { class: 'mathjax-overflow' })
+            }
+          });
+        }, '', false]
+      }
+    }
+  }
+  
+  const script = document.createElement('script')
+  script.src = 'https://cdn.jsdelivr.net/npm/mathjax/es5/tex-mml-chtml.min.js'
+  script.id = 'MathJax-script'
+  script.async = true
+  document.head.appendChild(script)
+} else {
+  MathJax.startup.document.state(0)
+  MathJax.texReset()
+  MathJax.typesetPromise()
+}</script><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/katex/dist/katex.min.css"><script src="https://cdn.jsdelivr.net/npm/katex/dist/contrib/copy-tex.min.js"></script><script>(() => {
+  document.querySelectorAll('#article-container span.katex-display').forEach(item => {
+    btf.wrap(item, 'div', { class: 'katex-wrap'})
+  })
+})()</script></div><script src="/js/rphoto.js"></script><script data-pjax>obcboPic()</script><canvas class="fireworks" mobile="false"></canvas><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/fireworks.min.js"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>
